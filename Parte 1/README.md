@@ -8,7 +8,7 @@ Excluindo o uso tradicional de exceções, as estratégias mais comuns para lida
 
 A função comunica se a operação foi bem-sucedida ou não através do valor que ela devolve ao final da execução (por exemplo, retornando `true/false`, `null` ou um número como `-1`). Fica a cargo do trecho de código que chamou a função testar esse resultado antes de dar o próximo passo.
 
-\`\`\`typescript
+```typescript
 public bankDeposit(value: number, accNumber: string): boolean {
     const accountIndex: number | undefined = this.getAccountIndexByNumber(accNumber);
 
@@ -18,7 +18,7 @@ public bankDeposit(value: number, accNumber: string): boolean {
     }
     return false;
 }
-\`\`\`
+```
 
 ---
 
@@ -26,19 +26,19 @@ public bankDeposit(value: number, accNumber: string): boolean {
 
 O bloco `try` encapsula o trecho de código considerado "arriscado". Se qualquer erro "estourar" ali dentro, o fluxo de execução é desviado imediatamente para o bloco `catch`, que intercepta o erro e define como a aplicação deve reagir. O bloco `finally` (opcional) roda sempre, independentemente de ter havido falha ou sucesso.
 
-\`\`\`typescript
+```typescript
 function dividir(a: number, b: number): number {
     try {
         if (b === 0) throw new Error("Divisão por zero não é permitida.");
         return a / b;
     } catch (error) {
-        console.error(\`Erro capturado: \${(error as Error).message}\`);
+        console.error(`Erro capturado: ${(error as Error).message}`);
         return 0;
     } finally {
         console.log("Operação de divisão finalizada.");
     }
 }
-\`\`\`
+```
 
 ---
 
@@ -46,7 +46,7 @@ function dividir(a: number, b: number): number {
 
 A função inspeciona a integridade dos parâmetros logo no início. Se os dados não fizerem sentido (ex: letras onde deveriam ser números), a função interrompe o processamento na mesma hora, exibindo um alerta visual ou retornando prematuramente, sem tocar na lógica principal.
 
-\`\`\`typescript
+```typescript
 function processarIdade(idade: number): void {
     if (isNaN(idade) || idade <= 0) {
         console.error("Erro: idade inválida. Informe um valor maior que zero.");
@@ -54,7 +54,7 @@ function processarIdade(idade: number): void {
     }
     console.log("Idade válida:", idade);
 }
-\`\`\`
+```
 
 ---
 
@@ -78,19 +78,19 @@ Espalhar checagens manuais por todo o sistema gera código redundante e vulnerá
 
 Na classe `Conta`, o comportamento do método `sacar()` determina que, se o cliente pedir um valor acima do que possui em saldo, a execução não prossegue. Em vez disso, é atirada uma exceção imediata:
 
-\`\`\`typescript
+```typescript
 public sacar(valor: number): void {
     this.validaValor(valor);
 
     if (valor > this._saldo) {
         throw new Error(
-            \`Saldo insuficiente! Saldo atual: R$ \${this._saldo.toFixed(2)}, \` +
-            \`tentativa de saque: R$ \${valor.toFixed(2)}.\`
+            `Saldo insuficiente! Saldo atual: R$ ${this._saldo.toFixed(2)}, ` +
+            `tentativa de saque: R$ ${valor.toFixed(2)}.`
         );
     }
     this._saldo -= valor;
 }
-\`\`\`
+```
 
 Imagine que Alice tente fazer a operação `contaA.transferir(800, contaB)`, mas seu limite é de apenas R$ 500,00. O processo de `transferir()` precisa obrigatoriamente chamar o `sacar(800)` primeiro. Sendo 800 superior a 500, a exceção "explode" **antes** que qualquer centavo seja debitado. A função `transferir()` morre ali mesmo, o dinheiro não sai da origem e não entra no destino. Isso garante que as operações de transferência sejam **atômicas**: ou ocorrem por inteiro com sucesso, ou são canceladas mantendo o estado inicial intacto.
 
@@ -100,7 +100,7 @@ Imagine que Alice tente fazer a operação `contaA.transferir(800, contaB)`, mas
 
 Se forçarmos uma transferência astronômica via interface (`App`), o sistema se comporta assim:
 
-\`\`\`text
+```text
 Informe o número da conta origem: 111-1
 Informe o número da conta destino: 222-2
 Digite o valor a ser transferido: 9999
@@ -108,11 +108,11 @@ Saldo insuficiente! Saldo atual: R$ 300.00, tentativa de saque: R$ 9999.00.
 
 Transferência falhou!
 Operação Finalizada!
-\`\`\`
+```
 
 O bloco no controlador do menu atua como a rede de segurança final:
 
-\`\`\`typescript
+```typescript
 private handleTransfer(): void {
     const originAccount = getText("Informe o número da conta origem: ");
     const destinationAccount = getText("Informe o número da conta destino: ");
@@ -128,7 +128,7 @@ private handleTransfer(): void {
         }
     }
 }
-\`\`\`
+```
 
 A exceção nasce lá no fundo, em `Conta.sacar()`, é repassada pelo `Conta.transferir()`, voa pelo `Banco.transferir()` e só aterrissa no `App.menu()`, onde o `catch` está posicionado. Nenhuma dessas camadas intermediárias teve que se preocupar em capturar o erro — o TypeScript eleva a falha pela pilha de execução sozinho.
 
@@ -140,34 +140,17 @@ A exceção nasce lá no fundo, em `Conta.sacar()`, é repassada pelo `Conta.tra
 
 Para evitar código duplicado, a classe `Conta` ganhou o método `validaValor(valor)`. Ele proíbe números negativos, zerados ou tipos inválidos, servindo como um escudo chamado durante o **construtor**, no **`sacar()`** e no **`depositar()`**:
 
-\`\`\`typescript
+```typescript
 public validaValor(valor: number): void {
     if (isNaN(valor) || typeof valor !== "number") {
-        throw new Error(\`Valor inválido: "\${valor}" não é um número.\`);
+        throw new Error(`Valor inválido: "${valor}" não é um número.`);
     }
     if (valor <= 0) {
         throw new Error(
-            \`Valor inválido: \${valor}. O valor deve ser maior que zero.\`
+            `Valor inválido: ${valor}. O valor deve ser maior que zero.`
         );
     }
 }
-\`\`\`
+```
 
-Em contrapartida, na interface com o usuário, a função genérica `getNumber` atua apenas filtrando o que é digitado no terminal. Se bater em letras, ela aciona uma recursão pedindo que o usuário digite novamente, limpando o terreno para o `validaValor` checar estritamente a matemática financeira.
-
-\`\`\`typescript
-export function getNumber(text: string): number {
-    const response = input(text);
-    try {
-        if (isNaN(Number(response)) || response === "") {
-            throw new Error(\`Erro: Caractere inválido!\n\`);
-        }
-        return Number(response);
-    } catch (error) {
-        console.error((error as Error).message);
-        return getNumber(text); // Chama novamente até o acerto
-    }
-}
-\`\`\`
-
-**Avaliação da Estrutura:** A divisão de responsabilidades é cirúrgica. A camada de leitura (`getNumber`) não se importa com as regras do banco, apenas com a conversão de strings para números reais. A camada de entidade (`validaValor`) não precisa se preocupar com caracteres estranhos, focando apenas no domínio bancário (proibir calotes e saldos fantasmas). Alterar as regras do banco não exige modificação na leitura do terminal, consolidando uma excelente arquitetura orientada a objetos.
+Em contrapartida, na
