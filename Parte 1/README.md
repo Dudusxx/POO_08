@@ -1,14 +1,14 @@
-# __Atividade 8.1__
+# __Resoluções da Atividade 8.1__
 
 ## 1ª Questão
 
-Dentre as formas de tratamento de erros, as mais comuns além do lançamento de exceções são:
+Excluindo o uso tradicional de exceções, as estratégias mais comuns para lidar com falhas no código são:
 
-**1 - Verificação por código de retorno**
+**1. Checagem de Retorno (Códigos de Erro)**
 
-A função sinaliza sucesso ou falha por meio do seu valor de retorno (ex: `true/false`, `null`, `-1`). Quem chama a função é responsável por verificar o retorno antes de prosseguir.
+A função comunica se a operação foi bem-sucedida ou não através do valor que ela devolve ao final da execução (por exemplo, retornando `true/false`, `null` ou um número como `-1`). Fica a cargo do trecho de código que chamou a função testar esse resultado antes de dar o próximo passo.
 
-```typescript
+\`\`\`typescript
 public bankDeposit(value: number, accNumber: string): boolean {
     const accountIndex: number | undefined = this.getAccountIndexByNumber(accNumber);
 
@@ -18,35 +18,35 @@ public bankDeposit(value: number, accNumber: string): boolean {
     }
     return false;
 }
-```
+\`\`\`
 
 ---
 
-**2 - Tratamento por `try-catch`**
+**2. Utilização de blocos `try-catch`**
 
-Um bloco `try` envolve o código que pode falhar. Se um erro for lançado, o controle passa imediatamente para o bloco `catch`, que recebe o objeto de erro e pode tratá-lo. O bloco `finally`, quando presente, sempre é executado independente de ter ocorrido erro ou não.
+O bloco `try` encapsula o trecho de código considerado "arriscado". Se qualquer erro "estourar" ali dentro, o fluxo de execução é desviado imediatamente para o bloco `catch`, que intercepta o erro e define como a aplicação deve reagir. O bloco `finally` (opcional) roda sempre, independentemente de ter havido falha ou sucesso.
 
-```typescript
+\`\`\`typescript
 function dividir(a: number, b: number): number {
     try {
         if (b === 0) throw new Error("Divisão por zero não é permitida.");
         return a / b;
     } catch (error) {
-        console.error(`Erro capturado: ${(error as Error).message}`);
+        console.error(\`Erro capturado: \${(error as Error).message}\`);
         return 0;
     } finally {
         console.log("Operação de divisão finalizada.");
     }
 }
-```
+\`\`\`
 
 ---
 
-**3 - Validação de entrada**
+**3. Validação Prévia de Dados (Defensiva)**
 
-Antes de executar qualquer lógica, a função verifica se os dados recebidos são válidos. Caso não sejam, a execução é interrompida imediatamente, exibindo uma mensagem de erro ou lançando uma exceção.
+A função inspeciona a integridade dos parâmetros logo no início. Se os dados não fizerem sentido (ex: letras onde deveriam ser números), a função interrompe o processamento na mesma hora, exibindo um alerta visual ou retornando prematuramente, sem tocar na lógica principal.
 
-```typescript
+\`\`\`typescript
 function processarIdade(idade: number): void {
     if (isNaN(idade) || idade <= 0) {
         console.error("Erro: idade inválida. Informe um valor maior que zero.");
@@ -54,53 +54,53 @@ function processarIdade(idade: number): void {
     }
     console.log("Idade válida:", idade);
 }
-```
+\`\`\`
 
 ---
 
 ## 2ª Questão
 
-**1. Verificação por código de retorno**
+**1. Checagem de Retorno**
 
-O principal problema é que o chamador pode simplesmente ignorar o valor de retorno sem nenhum aviso do compilador, o código compila e executa normalmente, mas em estado incorreto. Além disso, quando a função já precisa retornar um dado (ex: um número calculado), usar o mesmo retorno para indicar erro gera ambiguidade: um retorno `-1` significa erro ou é um resultado válido? Por fim, o contexto do erro se perde completamente, não há mensagem, não há stack trace, não há distinção entre tipos de falha.
+O maior gargalo dessa abordagem é que o desenvolvedor pode simplesmente esquecer de validar o retorno e o compilador não vai emitir alertas. A aplicação continuará rodando com dados corrompidos. Além disso, se a função já precisa retornar um valor real (como o resultado de uma equação), usar a mesma saída para sinalizar um erro gera confusão (ex: retornar `-1` significa um erro de sistema ou o resultado matemático real?). Por último, o rastreio desaparece: você não tem um "stack trace" detalhado ou uma mensagem específica de qual foi a raiz do problema.
 
-**2. Tratamento por `try-catch`**
+**2. Utilização de blocos `try-catch`**
 
-O `try-catch` é poderoso, mas convida ao abuso. Um bloco `catch (error)` genérico pode engolir qualquer tipo de exceção, inclusive erros de programação que deveriam ser corrigidos, não silenciados. Outro problema comum é usar `try-catch` para controle de fluxo normal (ex: verificar se um usuário existe), o que torna o código mais difícil de ler e prejudica a performance, pois a criação do stack trace tem custo. Por fim, em código assíncrono, um `throw` dentro de um `setTimeout` ou callback não é capturado por um `try-catch` externo, exigindo tratamento adicional com `Promise` e `.catch()`.
+Apesar de ser uma ferramenta poderosa, o `try-catch` facilita más práticas. Criar um `catch` genérico que "engole" erros em silêncio esconde bugs críticos que deveriam travar o sistema para serem corrigidos. É comum também usá-lo equivocadamente para gerenciar o fluxo normal do sistema (como verificar se um usuário está no banco de dados), o que suja o código e causa lentidão, pois instanciar um stack trace exige muito da máquina. Em execuções assíncronas (como promessas ou temporizadores), um erro solto não é pego pelo `try-catch` convencional ao redor dele.
 
-**3. Validação de entrada**
+**3. Validação Prévia de Dados**
 
-Validar entradas manualmente em cada ponto do sistema é trabalhoso e propenso a inconsistências: basta uma função esquecer de validar para abrir uma brecha. As mensagens de erro ficam espalhadas pelo código sem padronização, o que dificulta a manutenção. Além disso, o fluxo do código fica poluído com condicionais defensivas em vez de expressar a lógica de negócio. Diferentemente das exceções, esse método não interrompe a pilha de chamadas automaticamente, a função apenas retorna cedo, e as camadas acima não são notificadas a menos que o retorno seja explicitamente verificado.
+Espalhar checagens manuais por todo o sistema gera código redundante e vulnerável: se você esquecer um único `if` em uma função nova, o erro passa. A manutenção fica caótica, pois as mensagens de aviso não seguem um padrão central. O código perde clareza, ficando afogado em condicionais defensivas que escondem o real propósito da função. Além disso, sem o lançamento de uma exceção, a falha não percorre a pilha de chamadas; a função apenas para de rodar, e quem a chamou pode nem perceber o que deu errado.
 
 ---
 
 ## 3ª Questão
 
-O método `sacar()` da classe `Conta` verifica se o valor solicitado é maior que o saldo disponível e, caso seja, lança uma exceção com `throw new Error(...)`:
+Na classe `Conta`, o comportamento do método `sacar()` determina que, se o cliente pedir um valor acima do que possui em saldo, a execução não prossegue. Em vez disso, é atirada uma exceção imediata:
 
-```typescript
+\`\`\`typescript
 public sacar(valor: number): void {
     this.validaValor(valor);
 
     if (valor > this._saldo) {
         throw new Error(
-            `Saldo insuficiente! Saldo atual: R$ ${this._saldo.toFixed(2)}, ` +
-            `tentativa de saque: R$ ${valor.toFixed(2)}.`
+            \`Saldo insuficiente! Saldo atual: R$ \${this._saldo.toFixed(2)}, \` +
+            \`tentativa de saque: R$ \${valor.toFixed(2)}.\`
         );
     }
     this._saldo -= valor;
 }
-```
+\`\`\`
 
-Ao chamar `contaA.transferir(800, contaB)` com Alice tendo apenas R$ 500,00, o método `transferir()` internamente chama `sacar(800)`. Como `800 > 500`, a exceção é lançada **antes** de qualquer alteração de saldo. A execução do método `transferir()` é interrompida imediatamente, o depósito na conta destino nunca ocorre, e ambos os saldos permanecem inalterados. Isso demonstra que a operação de transferência é **atômica neste sentido**: ou executa por completo, ou não altera nada.
+Imagine que Alice tente fazer a operação `contaA.transferir(800, contaB)`, mas seu limite é de apenas R$ 500,00. O processo de `transferir()` precisa obrigatoriamente chamar o `sacar(800)` primeiro. Sendo 800 superior a 500, a exceção "explode" **antes** que qualquer centavo seja debitado. A função `transferir()` morre ali mesmo, o dinheiro não sai da origem e não entra no destino. Isso garante que as operações de transferência sejam **atômicas**: ou ocorrem por inteiro com sucesso, ou são canceladas mantendo o estado inicial intacto.
 
 ---
 
 ## 4ª Questão
 
-Ao tentar uma transferência com valor muito acima do saldo a partir do `App`:
+Se forçarmos uma transferência astronômica via interface (`App`), o sistema se comporta assim:
 
-```
+\`\`\`text
 Informe o número da conta origem: 111-1
 Informe o número da conta destino: 222-2
 Digite o valor a ser transferido: 9999
@@ -108,11 +108,11 @@ Saldo insuficiente! Saldo atual: R$ 300.00, tentativa de saque: R$ 9999.00.
 
 Transferência falhou!
 Operação Finalizada!
-```
+\`\`\`
 
-O `try-catch` no método de menu captura a exceção:
+O bloco no controlador do menu atua como a rede de segurança final:
 
-```typescript
+\`\`\`typescript
 private handleTransfer(): void {
     const originAccount = getText("Informe o número da conta origem: ");
     const destinationAccount = getText("Informe o número da conta destino: ");
@@ -128,48 +128,46 @@ private handleTransfer(): void {
         }
     }
 }
-```
+\`\`\`
 
-A exceção é lançada em `Conta.sacar()`, sobe para `Conta.transferir()`, de lá para `Banco.transferir()` e finalmente chega em `App.menu()` onde é capturada. Nenhuma dessas camadas intermediárias precisa de `try-catch` próprio — a exceção percorre a pilha de chamadas automaticamente até encontrar o primeiro `catch` disponível.
+A exceção nasce lá no fundo, em `Conta.sacar()`, é repassada pelo `Conta.transferir()`, voa pelo `Banco.transferir()` e só aterrissa no `App.menu()`, onde o `catch` está posicionado. Nenhuma dessas camadas intermediárias teve que se preocupar em capturar o erro — o TypeScript eleva a falha pela pilha de execução sozinho.
 
-**Avaliação de confiabilidade:** a implementação é confiável para o cenário em questão. Como o `throw` em `sacar()` ocorre antes de qualquer débito, a consistência dos dados é preservada, não existe risco de a conta origem ser debitada sem que a destino seja creditada. O tratamento centralizado no `App.menu()` também evita duplicação de lógica de erro. O ponto de atenção é que, em sistemas maiores, lançar apenas `new Error` genérico pode dificultar a distinção entre tipos de falha (ex: saldo insuficiente vs. conta inexistente); o ideal seria criar classes de erro customizadas (`class SaldoInsuficienteError extends Error`).
+**Análise de segurança:** O design atual atende muito bem aos requisitos do cenário. Graças ao `throw` preventivo, é impossível corromper os dados (como debitar a conta origem e falhar no meio do caminho antes de creditar o destino). Tratar as exceções na camada mais externa (App) evita repetição de lógica visual. A única evolução recomendada (já visível na Parte 2 do código) é abandonar os objetos de erro genéricos (`new Error`) e adotar classes especializadas (ex: `SaldoInsuficienteError`), permitindo tratamentos diferenciados dependendo do tipo da falha.
 
 ---
 
 ## 5ª Questão
 
-O método `validaValor(valor)` foi adicionado à classe `Conta` para centralizar a validação. Ele lança um erro se o valor for `<= 0` ou não for um número válido (`NaN`), e é chamado no **construtor**, em **`sacar()`** e em **`depositar()`**:
+Para evitar código duplicado, a classe `Conta` ganhou o método `validaValor(valor)`. Ele proíbe números negativos, zerados ou tipos inválidos, servindo como um escudo chamado durante o **construtor**, no **`sacar()`** e no **`depositar()`**:
 
-```typescript
+\`\`\`typescript
 public validaValor(valor: number): void {
     if (isNaN(valor) || typeof valor !== "number") {
-        throw new Error(`Valor inválido: "${valor}" não é um número.`);
+        throw new Error(\`Valor inválido: "\${valor}" não é um número.\`);
     }
     if (valor <= 0) {
         throw new Error(
-            `Valor inválido: ${valor}. O valor deve ser maior que zero.`
+            \`Valor inválido: \${valor}. O valor deve ser maior que zero.\`
         );
     }
 }
-```
+\`\`\`
 
+Em contrapartida, na interface com o usuário, a função genérica `getNumber` atua apenas filtrando o que é digitado no terminal. Se bater em letras, ela aciona uma recursão pedindo que o usuário digite novamente, limpando o terreno para o `validaValor` checar estritamente a matemática financeira.
 
-
-A função auxiliar `getNumber` (camada de IO) faz uma primeira barreira rejeitando entradas não numéricas e pedindo nova entrada recursivamente, enquanto `validaValor` cuida da regra de negócio (valor positivo). As duas camadas se complementam:
-
-```typescript
+\`\`\`typescript
 export function getNumber(text: string): number {
     const response = input(text);
     try {
         if (isNaN(Number(response)) || response === "") {
-            throw new Error(`Erro: Caractere inválido!\n`);
+            throw new Error(\`Erro: Caractere inválido!\n\`);
         }
         return Number(response);
     } catch (error) {
         console.error((error as Error).message);
-        return getNumber(text); // pede nova entrada recursivamente
+        return getNumber(text); // Chama novamente até o acerto
     }
 }
-```
+\`\`\`
 
-**Avaliação:** o tratamento ficou bem estruturado em duas camadas distintas. A camada de IO (`getNumber`) garante que só números chegam à lógica de negócio. A camada de domínio (`validaValor`) garante que esses números respeitem as regras do sistema bancário. Isso segue o princípio de responsabilidade única e facilita a manutenção: mudar a regra de negócio não afeta o IO, e vice-versa.
+**Avaliação da Estrutura:** A divisão de responsabilidades é cirúrgica. A camada de leitura (`getNumber`) não se importa com as regras do banco, apenas com a conversão de strings para números reais. A camada de entidade (`validaValor`) não precisa se preocupar com caracteres estranhos, focando apenas no domínio bancário (proibir calotes e saldos fantasmas). Alterar as regras do banco não exige modificação na leitura do terminal, consolidando uma excelente arquitetura orientada a objetos.
